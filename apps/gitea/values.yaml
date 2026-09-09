@@ -10,7 +10,7 @@ service:
   http:
     type: NodePort
     port: 3000
-    nodePort: 30080
+    nodePort: 30090
   ssh:
     type: NodePort
     port: 22
