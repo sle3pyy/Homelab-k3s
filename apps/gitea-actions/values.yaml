@@ -1,0 +1,36 @@
+global:
+  storageClass: local-path
+
+enabled: true
+giteaRootURL: http://gitea-http.gitea.svc.cluster.local:3000
+
+provisioning:
+  enabled: true
+
+persistence:
+  create: false
+  claimName: gitea-shared-storage
+  storageClass: local-path
+
+image:
+  registry: docker.io
+  repository: gitea/gitea
+  tag: 1.27.0-rootless
+
+statefulset:
+  replicas: 1
+  timezone: Europe/Lisbon
+  persistence:
+    size: 5Gi
+    storageClass: local-path
+  runner:
+    config: |
+      log:
+        level: info
+      cache:
+        enabled: false
+      runner:
+        labels:
+          - ubuntu-latest:docker://docker.gitea.com/runner-images:ubuntu-latest
+          - ubuntu-24.04:docker://docker.gitea.com/runner-images:ubuntu-24.04
+          - ubuntu-22.04:docker://docker.gitea.com/runner-images:ubuntu-22.04

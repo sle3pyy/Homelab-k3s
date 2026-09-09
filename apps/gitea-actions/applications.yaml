@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gitea-actions
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: '1'
+
+spec:
+  project: homelab
+
+  sources:
+    - repoURL: https://dl.gitea.com/charts/
+      chart: actions
+      targetRevision: 0.1.2
+
+      helm:
+        valueFiles:
+          - $values/apps/gitea-actions/values.yaml
+
+    - repoURL: https://github.com/sle3pyy/Homelab-k3s.git
+      targetRevision: main
+      ref: values
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: gitea
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
+    syncOptions:
+      - CreateNamespace=true
