@@ -5,7 +5,7 @@ metadata:
   namespace: argocd
 
 spec:
-  project: homelab
+  project: default
 
   source:
     repoURL: https://github.com/sle3pyy/Homelab-k3s.git
