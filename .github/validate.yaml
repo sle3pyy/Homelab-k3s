@@ -1,0 +1,29 @@
+name: Validate Code
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs: 
+  yaml:
+    name: YAML Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install yamllint
+      run: pip install yamllint
+
+    - name: YAML Lint
+      run: |
+        yamllint -c .yamllint.yml .
+      continue-on-error: true

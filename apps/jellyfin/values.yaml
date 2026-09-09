@@ -1,0 +1,22 @@
+replicaCount: 1
+
+service:
+  type: NodePort
+  port: 8096
+  nodePort: 30096
+
+persistence:
+  config:
+    enabled: true
+    size: 10Gi
+
+  cache:
+    enabled: true
+    size: 10Gi
+
+  media:
+    enabled: true
+    type: nfs
+    nfsServer: 192.168.1.10
+    nfsPath: /media
+    readOnly: true

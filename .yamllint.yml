@@ -1,0 +1,33 @@
+extends: default
+
+rules:
+  line-length:
+    max: 120
+    level: warning
+  document-start: disable
+  truthy:
+    level: warning
+  braces:
+    level: warning
+  brackets:
+    level: warning
+  commas:
+    level: warning
+  colons:
+    level: warning
+  document-end: disable
+  indentation:
+    indent-sequences: consistent
+    level: warning
+  key-duplicates: enable
+  new-line-at-end-of-file: disable
+  new-lines:
+    type: unix
+  trailing-spaces: enable
+  empty-lines:
+    max: 2
+    max-start: 0
+    max-end: 0
+  quoted-strings:
+    quote-type: single
+    required: only-when-needed
