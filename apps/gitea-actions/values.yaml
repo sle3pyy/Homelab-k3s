@@ -4,18 +4,8 @@ global:
 enabled: true
 giteaRootURL: http://gitea-http.gitea.svc.cluster.local:3000
 
-provisioning:
-  enabled: true
-
-persistence:
-  create: false
-  claimName: gitea-shared-storage
-  storageClass: local-path
-
-image:
-  registry: docker.io
-  repository: gitea/gitea
-  tag: 1.27.0-rootless
+existingSecret: gitea-actions-runner-token
+existingSecretKey: runner-token
 
 statefulset:
   replicas: 1
