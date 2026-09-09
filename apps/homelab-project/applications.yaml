@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: homelab-project
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: '-1'
+
+spec:
+  project: homelab
+
+  source:
+    repoURL: https://github.com/sle3pyy/Homelab-k3s.git
+    targetRevision: main
+    path: bootstrap
+    directory:
+      include: homelab-project.yaml
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
