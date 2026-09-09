@@ -5,7 +5,7 @@ metadata:
   namespace: argocd
 
 spec:
-  project: default
+  project: homelab
 
   sources:
     - repoURL: https://dl.gitea.com/charts/
