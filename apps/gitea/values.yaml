@@ -1,0 +1,66 @@
+global:
+  storageClass: local-path
+
+replicaCount: 1
+
+strategy:
+  type: Recreate
+
+service:
+  http:
+    type: NodePort
+    port: 3000
+    nodePort: 30080
+  ssh:
+    type: NodePort
+    port: 22
+    nodePort: 30222
+
+ingress:
+  enabled: false
+
+persistence:
+  enabled: true
+  create: true
+  mount: true
+  claimName: gitea-shared-storage
+  size: 20Gi
+  accessModes:
+    - ReadWriteOnce
+  storageClass: local-path
+
+redis-cluster:
+  enabled: false
+
+redis:
+  enabled: true
+  architecture: standalone
+  master:
+    persistence:
+      enabled: true
+      storageClass: local-path
+      size: 2Gi
+
+postgresql-ha:
+  enabled: false
+
+postgresql:
+  enabled: true
+  primary:
+    persistence:
+      enabled: true
+      storageClass: local-path
+      size: 10Gi
+
+gitea:
+  config:
+    server:
+      DOMAIN: gitea.bingus.pt
+      ROOT_URL: http://gitea.bingus.pt/
+      SSH_DOMAIN: gitea.bingus.pt
+      SSH_PORT: 30222
+    database:
+      DB_TYPE: postgres
+    indexer:
+      ISSUE_INDEXER_TYPE: bleve
+      REPO_INDEXER_ENABLED: true
