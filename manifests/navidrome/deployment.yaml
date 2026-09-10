@@ -29,7 +29,7 @@ spec:
     spec:
       containers:
         - name: navidrome
-          image: navidrome/navidrome:latest
+          image: deluan/navidrome:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
