@@ -23,6 +23,10 @@ spec:
     - server: https://kubernetes.default.svc
       namespace: jellyfin
     - server: https://kubernetes.default.svc
+      namespace: navidrome
+    - server: https://kubernetes.default.svc
+      namespace: arr
+    - server: https://kubernetes.default.svc
       namespace: kube-system
 
   clusterResourceWhitelist:
