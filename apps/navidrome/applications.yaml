@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: navidrome
+  namespace: argocd
+
+spec:
+  project: homelab
+
+  source:
+    repoURL: https://github.com/sle3pyy/Homelab-k3s.git
+    targetRevision: main
+    path: manifests/navidrome
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: navidrome
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
+    syncOptions:
+      - CreateNamespace=true
