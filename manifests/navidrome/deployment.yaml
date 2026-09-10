@@ -39,8 +39,8 @@ spec:
               value: /music
             - name: ND_DATAFOLDER
               value: /data
-            - name: ND_SCANINTERVAL
-              value: 1h
+            - name: ND_SCANNER_SCHEDULE
+              value: "@every 5m"
             - name: ND_ENABLESHARING
               value: "true"
           readinessProbe:
