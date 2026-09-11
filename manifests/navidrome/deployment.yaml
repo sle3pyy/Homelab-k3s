@@ -66,9 +66,8 @@ spec:
           persistentVolumeClaim:
             claimName: navidrome-data
         - name: music
-          hostPath:
-            path: /media/music
-            type: DirectoryOrCreate
+          persistentVolumeClaim:
+            claimName: navidrome-music
 ---
 apiVersion: v1
 kind: Service

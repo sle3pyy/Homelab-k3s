@@ -27,18 +27,6 @@ spec:
       labels:
         app.kubernetes.io/name: lidarr
     spec:
-      initContainers:
-        - name: prepare-media-directories
-          image: busybox:1.36
-          command:
-            - sh
-            - -c
-            - chown -R 1000:1000 /music /downloads && chmod -R u+rwX,g+rwX /music /downloads
-          volumeMounts:
-            - name: music
-              mountPath: /music
-            - name: downloads
-              mountPath: /downloads
       containers:
         - name: lidarr
           image: lscr.io/linuxserver/lidarr:latest
@@ -77,13 +65,11 @@ spec:
           persistentVolumeClaim:
             claimName: lidarr-config
         - name: music
-          hostPath:
-            path: /media/music
-            type: DirectoryOrCreate
+          persistentVolumeClaim:
+            claimName: arr-music
         - name: downloads
-          hostPath:
-            path: /media/downloads
-            type: DirectoryOrCreate
+          persistentVolumeClaim:
+            claimName: arr-downloads
 ---
 apiVersion: v1
 kind: Service

@@ -1,10 +1,10 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: navidrome
+  name: media-storage
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: '2'
+    argocd.argoproj.io/sync-wave: '1'
 
 spec:
   project: homelab
@@ -12,11 +12,11 @@ spec:
   source:
     repoURL: https://github.com/sle3pyy/Homelab-k3s.git
     targetRevision: main
-    path: manifests/navidrome
+    path: manifests/media-storage
 
   destination:
     server: https://kubernetes.default.svc
-    namespace: navidrome
+    namespace: argocd
 
   syncPolicy:
     automated:

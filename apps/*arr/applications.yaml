@@ -3,6 +3,8 @@ kind: Application
 metadata:
   name: lidarr
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: '2'
 
 spec:
   project: homelab
@@ -29,6 +31,8 @@ kind: Application
 metadata:
   name: musicgrabber
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: '2'
 
 spec:
   project: homelab

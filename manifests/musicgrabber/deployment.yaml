@@ -27,16 +27,6 @@ spec:
       labels:
         app.kubernetes.io/name: musicgrabber
     spec:
-      initContainers:
-        - name: prepare-music-directory
-          image: busybox:1.36
-          command:
-            - sh
-            - -c
-            - chown -R 1000:1000 /music && chmod -R u+rwX,g+rwX /music
-          volumeMounts:
-            - name: music
-              mountPath: /music
       containers:
         - name: musicgrabber
           image: g33kphr33k/musicgrabber:latest
@@ -85,9 +75,8 @@ spec:
           persistentVolumeClaim:
             claimName: musicgrabber-data
         - name: music
-          hostPath:
-            path: /media/music
-            type: DirectoryOrCreate
+          persistentVolumeClaim:
+            claimName: arr-music
         - name: shm
           emptyDir:
             medium: Memory

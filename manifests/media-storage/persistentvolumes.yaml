@@ -1,0 +1,96 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: navidrome
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: arr
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: navidrome-music-nfs
+spec:
+  capacity:
+    storage: 150Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  nfs:
+    server: media-nfs.home.arpa
+    path: /srv/media/music
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: navidrome-music
+  namespace: navidrome
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 150Gi
+  storageClassName: ""
+  volumeName: navidrome-music-nfs
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: arr-music-nfs
+spec:
+  capacity:
+    storage: 150Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  nfs:
+    server: media-nfs.home.arpa
+    path: /srv/media/music
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: arr-music
+  namespace: arr
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 150Gi
+  storageClassName: ""
+  volumeName: arr-music-nfs
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: arr-downloads-nfs
+spec:
+  capacity:
+    storage: 20Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  nfs:
+    server: media-nfs.home.arpa
+    path: /srv/media/downloads
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: arr-downloads
+  namespace: arr
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: ""
+  volumeName: arr-downloads-nfs

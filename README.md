@@ -21,6 +21,7 @@ Homelab-k3s/
 │   ├── gitea/
 │   ├── gitea-actions/
 │   ├── jellyfin/
+│   ├── media-storage/
 │   └── *arr/
 └── .github/
     └── validate.yaml
@@ -145,7 +146,7 @@ persistence:
   media:
     enabled: true
     type: nfs
-    nfsServer: 192.168.1.10
+    nfsServer: media-nfs.home.arpa
     nfsPath: /media
     readOnly: true
 ```
@@ -155,7 +156,25 @@ available and the media path is confirmed.
 
 ### Arr Stack
 
-`apps/*arr/` is currently only a placeholder directory. In the future it will contain the arr stack to go along with jellyfin.
+`apps/*arr/` deploys the music automation applications that go along with
+Jellyfin and Navidrome.
+
+`apps/media-storage/` deploys the shared NFS-backed `PersistentVolume` and
+`PersistentVolumeClaim` resources for these applications. The media stack
+expects a dedicated 200G NFS server, provisioned by the `k3s-proxmox-terraform`
+repository and resolvable by every Kubernetes node as `media-nfs.home.arpa`.
+
+- music export: `media-nfs.home.arpa:/srv/media/music`, advertised as `150Gi`
+- downloads export: `media-nfs.home.arpa:/srv/media/downloads`, advertised as `20Gi`
+
+Navidrome runs in the `navidrome` namespace and mounts the music export
+read-only through `navidrome-music`. Lidarr and MusicGrabber run in the `arr`
+namespace and mount the same music export read-write through `arr-music`;
+Lidarr also mounts the downloads export.
+
+Because PVCs are namespace-scoped, `navidrome-music` and `arr-music` are
+separate Kubernetes claims pointing at the same NFS directory. Their `150Gi`
+sizes describe the same backing music export and should not be added together.
 
 ## Sync Order
 
@@ -167,4 +186,3 @@ The intended sync order is:
 
 The project application has sync wave `-1`, the app-of-apps has sync wave `0`,
 and `gitea-actions` has sync wave `1` so it starts after the base apps.
-
