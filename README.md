@@ -341,3 +341,17 @@ The project application has sync wave `-1`, the app-of-apps has sync wave `0`,
 `gitea-actions` and `media-storage` have sync wave `1`, and the music
 applications have sync wave `2`. Media storage should exist before Navidrome,
 Lidarr, and MusicGrabber try to mount the shared NFS claims.
+
+## Port Reference
+
+| Application | Namespace | Service | In-cluster port | NodePort | Protocol |
+| --- | --- | --- | --- | --- | --- |
+| Gitea HTTP | `gitea` | `gitea-http` | `3000` | `30090` | TCP |
+| Gitea SSH | `gitea` | `gitea-ssh` | `22` | `30222` | TCP |
+| qBittorrent Web UI | `arr` | `qbittorrent` | `30081` | `30081` | TCP |
+| MusicGrabber | `arr` | `musicgrabber` | `8080` | `30274` | TCP |
+| Jellyfin | `jellyfin` | `jellyfin` | `8096` | `30096` | TCP |
+| Navidrome | `navidrome` | `navidrome` | `4533` | `30453` | TCP |
+| qBittorrent BitTorrent | `arr` | `qbittorrent` | `30681` | `30681` | TCP/UDP |
+| Lidarr | `arr` | `lidarr` | `8686` | `30686` | TCP |
+| Prowlarr | `arr` | `prowlarr` | `9696` | `30696` | TCP |
