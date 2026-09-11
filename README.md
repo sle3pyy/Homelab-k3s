@@ -22,7 +22,13 @@ Homelab-k3s/
 │   ├── gitea-actions/
 │   ├── jellyfin/
 │   ├── media-storage/
+│   ├── navidrome/
 │   └── *arr/
+├── manifests/
+│   ├── lidarr/
+│   ├── media-storage/
+│   ├── musicgrabber/
+│   └── navidrome/
 └── .github/
     └── validate.yaml
 ```
@@ -154,23 +160,123 @@ persistence:
 Do not expect this application to be functional until the NAS/NFS storage is
 available and the media path is confirmed.
 
+### Media Storage
+
+`apps/media-storage/` deploys the shared NFS-backed storage primitives used by
+the music stack. The manifests create the `navidrome` and `arr` namespaces, then
+bind static `PersistentVolume` and `PersistentVolumeClaim` resources to the
+media NFS server.
+
+The media NFS server is expected to be provisioned by
+`k3s-proxmox-terraform` and resolvable by every Kubernetes node as
+`media-nfs.home.arpa`.
+
+- music export: `media-nfs.home.arpa:/srv/media/music`, advertised as `150Gi`
+- downloads export: `media-nfs.home.arpa:/srv/media/downloads`, advertised as
+  `20Gi`
+- `navidrome-music`: `navidrome` namespace claim for the music export
+- `arr-music`: `arr` namespace claim for the same music export
+- `arr-downloads`: `arr` namespace claim for the downloads export
+
+The NFS exports are intended to be writable by applications running as
+UID/GID `1000:1000`.
+
+### Navidrome
+
+`apps/navidrome/` deploys Navidrome from a raw Kubernetes manifest:
+
+- image: `deluan/navidrome:latest`
+- namespace: `navidrome`
+- HTTP NodePort: `30453`
+- data PVC: `navidrome-data`, mounted at `/data`
+- music PVC: `navidrome-music`, mounted read-only at `/music`
+
+Navidrome is configured with:
+
+```yaml
+ND_MUSICFOLDER: /music
+ND_DATAFOLDER: /data
+ND_SCANNER_SCHEDULE: '@every 5m'
+ND_ENABLESHARING: 'true'
+```
+
+Navidrome scans the shared music export directly. It should see music once files
+exist under `/srv/media/music` on the NFS server and are visible inside the pod
+at `/music`.
+
 ### Arr Stack
 
 `apps/*arr/` deploys the music automation applications that go along with
-Jellyfin and Navidrome.
+Jellyfin and Navidrome. The stack currently contains Lidarr and MusicGrabber.
 
-`apps/media-storage/` deploys the shared NFS-backed `PersistentVolume` and
-`PersistentVolumeClaim` resources for these applications. The media stack
-expects a dedicated 200G NFS server, provisioned by the `k3s-proxmox-terraform`
-repository and resolvable by every Kubernetes node as `media-nfs.home.arpa`.
+#### Lidarr
 
-- music export: `media-nfs.home.arpa:/srv/media/music`, advertised as `150Gi`
-- downloads export: `media-nfs.home.arpa:/srv/media/downloads`, advertised as `20Gi`
+`manifests/lidarr/` deploys Lidarr:
 
-Navidrome runs in the `navidrome` namespace and mounts the music export
-read-only through `navidrome-music`. Lidarr and MusicGrabber run in the `arr`
-namespace and mount the same music export read-write through `arr-music`;
-Lidarr also mounts the downloads export.
+- image: `lscr.io/linuxserver/lidarr:latest`
+- namespace: `arr`
+- HTTP NodePort: `30686`
+- config PVC: `lidarr-config`, mounted at `/config`
+- music PVC: `arr-music`, mounted at `/music`
+- downloads PVC: `arr-downloads`, mounted at `/downloads`
+- runtime UID/GID: `1000:1000`
+
+Lidarr has storage access, but it still needs application-level setup in the UI:
+
+1. Add `/music` as a root folder.
+2. Use Library Import to import existing artists/albums from `/music`.
+3. Configure a download client before expecting Lidarr to fetch new releases.
+
+Lidarr does not scan `/music` the same way Navidrome does. Navidrome indexes
+whatever it can read in the music folder, while Lidarr manages monitored
+artists/albums and imports matched media into the root folder.
+
+Useful checks:
+
+```bash
+kubectl -n arr exec deploy/lidarr -- \
+  sh -lc 'id; ls -la /music; find /music -maxdepth 3 -type f | head -20'
+
+kubectl -n arr exec deploy/lidarr -- \
+  sh -lc 'touch /music/.lidarr-write-test && rm /music/.lidarr-write-test'
+```
+
+#### MusicGrabber
+
+`manifests/musicgrabber/` deploys MusicGrabber:
+
+- image: `g33kphr33k/musicgrabber:latest`
+- namespace: `arr`
+- HTTP NodePort: `30274`
+- data PVC: `musicgrabber-data`, mounted at `/data`
+- music PVC: `arr-music`, mounted at `/music`
+- shared memory: `/dev/shm`, backed by a `2Gi` in-memory `emptyDir`
+
+MusicGrabber is configured to write music into `/music`, store its database at
+`/data/music_grabber.db`, enable MusicBrainz and lyrics support, convert to FLAC
+by default, and point at Navidrome through the in-cluster service URL:
+
+```yaml
+NAVIDROME_URL: http://navidrome.navidrome.svc.cluster.local:4533
+```
+
+#### Pending External Acquisition
+
+The current repository does not deploy Prowlarr or a download client yet. Lidarr
+can import existing music from `/music`, but for automated external acquisition
+the stack still needs:
+
+- Prowlarr for indexer/search integration.
+- qBittorrent or another download client mounted to the same `arr-downloads`
+  claim at `/downloads`.
+- Lidarr configured with the download client, a `lidarr` category, and any
+  required remote path mapping so completed downloads resolve to `/downloads`.
+
+The intended completed flow is:
+
+```text
+Prowlarr -> Lidarr -> qBittorrent -> /downloads -> Lidarr import -> /music -> Navidrome
+```
 
 Because PVCs are namespace-scoped, `navidrome-music` and `arr-music` are
 separate Kubernetes claims pointing at the same NFS directory. Their `150Gi`
@@ -185,4 +291,6 @@ The intended sync order is:
 3. individual applications under `apps/`
 
 The project application has sync wave `-1`, the app-of-apps has sync wave `0`,
-and `gitea-actions` has sync wave `1` so it starts after the base apps.
+`gitea-actions` and `media-storage` have sync wave `1`, and the music
+applications have sync wave `2`. Media storage should exist before Navidrome,
+Lidarr, and MusicGrabber try to mount the shared NFS claims.
