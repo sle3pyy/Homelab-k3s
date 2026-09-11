@@ -1,0 +1,104 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: qbittorrent-config
+  namespace: arr
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qbittorrent
+  namespace: arr
+  labels:
+    app.kubernetes.io/name: qbittorrent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: qbittorrent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: qbittorrent
+    spec:
+      containers:
+        - name: qbittorrent
+          image: lscr.io/linuxserver/qbittorrent:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 30081
+            - name: bittorrent-tcp
+              containerPort: 30681
+              protocol: TCP
+            - name: bittorrent-udp
+              containerPort: 30681
+              protocol: UDP
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: Europe/Lisbon
+            - name: WEBUI_PORT
+              value: "30081"
+            - name: TORRENTING_PORT
+              value: "30681"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: downloads
+              mountPath: /downloads
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: qbittorrent-config
+        - name: downloads
+          persistentVolumeClaim:
+            claimName: arr-downloads
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: qbittorrent
+  namespace: arr
+  labels:
+    app.kubernetes.io/name: qbittorrent
+spec:
+  type: NodePort
+  selector:
+    app.kubernetes.io/name: qbittorrent
+  ports:
+    - name: http
+      port: 30081
+      targetPort: http
+      nodePort: 30081
+    - name: bittorrent-tcp
+      port: 30681
+      targetPort: bittorrent-tcp
+      protocol: TCP
+      nodePort: 30681
+    - name: bittorrent-udp
+      port: 30681
+      targetPort: bittorrent-udp
+      protocol: UDP
+      nodePort: 30681

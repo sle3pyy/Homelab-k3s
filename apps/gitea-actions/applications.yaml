@@ -22,10 +22,6 @@ spec:
       targetRevision: main
       ref: values
 
-    - repoURL: https://github.com/sle3pyy/Homelab-k3s.git
-      targetRevision: main
-      path: manifests/gitea-actions
-
   destination:
     server: https://kubernetes.default.svc
     namespace: gitea

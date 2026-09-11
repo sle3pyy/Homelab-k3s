@@ -28,7 +28,9 @@ Homelab-k3s/
 │   ├── lidarr/
 │   ├── media-storage/
 │   ├── musicgrabber/
-│   └── navidrome/
+│   ├── navidrome/
+│   ├── prowlarr/
+│   └── qbittorrent/
 └── .github/
     └── validate.yaml
 ```
@@ -91,9 +93,7 @@ the Actions tab does not appear.
   - `ubuntu-24.04`
   - `ubuntu-22.04`
 
-The ArgoCD Application also references `manifests/gitea-actions`, but that
-directory is not currently implemented in this repository. For now, the runner
-token is managed as a manual Kubernetes secret in the cluster.
+The runner token is managed as a manual Kubernetes secret in the cluster.
 
 The runner requires an existing Kubernetes secret:
 
@@ -207,7 +207,57 @@ at `/music`.
 ### Arr Stack
 
 `apps/*arr/` deploys the music automation applications that go along with
-Jellyfin and Navidrome. The stack currently contains Lidarr and MusicGrabber.
+Jellyfin and Navidrome. The stack currently contains Prowlarr, qBittorrent,
+Lidarr, and MusicGrabber.
+
+#### Prowlarr
+
+`manifests/prowlarr/` deploys Prowlarr:
+
+- image: `lscr.io/linuxserver/prowlarr:latest`
+- namespace: `arr`
+- HTTP NodePort: `30696`
+- config PVC: `prowlarr-config`, mounted at `/config`
+- runtime UID/GID: `1000:1000`
+
+Prowlarr provides indexer/search integration for Lidarr. After deployment, add
+indexers in the Prowlarr UI and connect Lidarr as an application using Lidarr's
+in-cluster URL and API key:
+
+```text
+http://lidarr.arr.svc.cluster.local:8686
+```
+
+#### qBittorrent
+
+`manifests/qbittorrent/` deploys qBittorrent:
+
+- image: `lscr.io/linuxserver/qbittorrent:latest`
+- namespace: `arr`
+- HTTP NodePort: `30081`
+- BitTorrent port: `30681` TCP/UDP
+- config PVC: `qbittorrent-config`, mounted at `/config`
+- downloads PVC: `arr-downloads`, mounted at `/downloads`
+- runtime UID/GID: `1000:1000`
+
+qBittorrent is the download client Lidarr should use for grabbed releases. In
+Lidarr, configure qBittorrent with the in-cluster service URL and the
+credentials configured in the qBittorrent UI:
+
+```text
+host: qbittorrent.arr.svc.cluster.local
+port: 30081
+category: lidarr
+completed downloads path: /downloads
+```
+
+The default qBittorrent username is `admin`. The initial temporary password is
+printed in the qBittorrent pod logs and should be changed in the web UI after
+first login.
+
+Lidarr and qBittorrent both mount the same `arr-downloads` claim at
+`/downloads`, so completed downloads should not need a remote path mapping as
+long as qBittorrent also reports paths under `/downloads`.
 
 #### Lidarr
 
@@ -225,7 +275,8 @@ Lidarr has storage access, but it still needs application-level setup in the UI:
 
 1. Add `/music` as a root folder.
 2. Use Library Import to import existing artists/albums from `/music`.
-3. Configure a download client before expecting Lidarr to fetch new releases.
+3. Add qBittorrent as the download client.
+4. Let Prowlarr sync indexers into Lidarr.
 
 Lidarr does not scan `/music` the same way Navidrome does. Navidrome indexes
 whatever it can read in the music folder, while Lidarr manages monitored
@@ -260,17 +311,13 @@ by default, and point at Navidrome through the in-cluster service URL:
 NAVIDROME_URL: http://navidrome.navidrome.svc.cluster.local:4533
 ```
 
-#### Pending External Acquisition
+#### External Acquisition Flow
 
-The current repository does not deploy Prowlarr or a download client yet. Lidarr
-can import existing music from `/music`, but for automated external acquisition
-the stack still needs:
-
-- Prowlarr for indexer/search integration.
-- qBittorrent or another download client mounted to the same `arr-downloads`
-  claim at `/downloads`.
-- Lidarr configured with the download client, a `lidarr` category, and any
-  required remote path mapping so completed downloads resolve to `/downloads`.
+Lidarr can import existing music from `/music`. For automated external
+acquisition, the stack uses Prowlarr for indexer/search integration and
+qBittorrent for downloads. Lidarr still needs to be configured with the
+qBittorrent download client, a `lidarr` category, and any required remote path
+mapping if qBittorrent reports completed paths outside `/downloads`.
 
 The intended completed flow is:
 
